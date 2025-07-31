@@ -35,6 +35,8 @@ static struct gpio_callback sense_input_cb;
 volatile uint8_t g_sens_cnt = 0;
 uint32_t g_missed_event = 0;
 
+k_tid_t main_thread_id;
+
 struct sense_work
 {
     struct k_work work;
@@ -51,6 +53,7 @@ void sense_work_fn(struct k_work *item)
         LOG_INF("sens_missed");
         g_missed_event++;
     }
+    k_wakeup(main_thread_id);
 }
 
 /* Interrupt callback: set output high when input is high */
@@ -80,6 +83,8 @@ void simulate_input_thread(void)
 int main(void)
 {
     int ret = 0;
+
+    main_thread_id = k_current_get();
 
     /* Configure output pin */
     gpio_pin_configure_dt(&task_output, GPIO_OUTPUT_INACTIVE);
@@ -125,8 +130,8 @@ int main(void)
             k_sleep(K_MSEC(10));
             gpio_pin_set_dt(&led, 1);
         }
-        LOG_INF("main sleeping");
-        k_sleep(K_MSEC(25));
+        LOG_INF("main sleeping until kernel work item wakes it");
+        k_sleep(K_FOREVER);
     }
 
     return 0;

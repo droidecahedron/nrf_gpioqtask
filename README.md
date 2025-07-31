@@ -1,8 +1,8 @@
 
 # Overview
 
-A simple  demo showcasing the use of GPIO input with interrupts.
-The sample prints a message to the console each time a button is pressed.
+This demo just shows a simulated input to the 9151 (using an output) to one of the inputs.
+It shows using work items with ISRs and using the work item to wake up other tasks to consume "data" (in this case a flag).
 
 
 # Requirements
@@ -78,5 +78,9 @@ You will see that the `sim_input` pin will simulate an input, which triggers a w
 ```
 
 You will see dropped logs depending on the speed you are simulating inputs, and we are using deferred logging as well to keep it faster.
+The interrupt toggles a pin with devicetree, then queues a work item.
+The work item toggles another pin with devicetree, then wakes up the main thread.
+The main thread will consume the flag, pulse LED0 (led1 on silk), then go back to sleep forever.
 
-You can tighten the timing with `nrfx` instead of devicetree in ISRs, you can also measure how long from when the devicetree pin driving executes occurs in ISR versus the work queue item. You can also decide to have main be less sleepy and eat the flag more quickly to avoid "dropped" events.
+
+You can tighten the timing with `nrfx` instead of devicetree in ISRs, you can also measure how long from when the devicetree pin driving executes occurs in ISR versus the work queue item versus main.
