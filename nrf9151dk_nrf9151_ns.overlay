@@ -1,0 +1,29 @@
+/ {
+    //we will simulate an output with p0.06 and feed that into p0.03
+    sense_input: sense-input {
+        compatible = "nordic,gpio-pins";
+        gpios = <&gpio0 3 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+        status = "okay";
+    };
+
+    task_output: task-output {
+        compatible = "nordic,gpio-pins";
+        gpios = <&gpio0 2 (GPIO_ACTIVE_HIGH)>;
+        status = "okay";
+    };
+
+    sim_input: sim_input {
+        compatible = "nordic,gpio-pins";
+        gpios = <&gpio0 6 (GPIO_ACTIVE_HIGH)>;
+        status = "okay";
+    };
+};
+
+&gpio0 {
+    status = "okay";
+};
+
+// gpiote periph. https://docs.nordicsemi.com/bundle/ps_nrf9151/page/gpiote.html
+&gpiote {
+    status = "okay";
+};
