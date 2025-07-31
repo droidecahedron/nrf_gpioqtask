@@ -17,41 +17,6 @@ the same alias used by the :zephyr:code-sample:`blinky` sample. If this is provi
 will be turned on when the button is pressed, and turned off off when it is
 released.
 
-# Devicetree details
-
-```
-/ {
-    //we will simulate an output with p0.06 and feed that into p0.03
-    sense_input: sense-input {
-        compatible = "nordic,gpio-pins";
-        gpios = <&gpio0 3 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
-        status = "okay";
-    };
-
-    task_output: task-output {
-        compatible = "nordic,gpio-pins";
-        gpios = <&gpio0 2 (GPIO_ACTIVE_HIGH)>;
-        status = "okay";
-    };
-
-    sim_input: sim_input {
-        compatible = "nordic,gpio-pins";
-        gpios = <&gpio0 6 (GPIO_ACTIVE_HIGH)>;
-        status = "okay";
-    };
-};
-
-&gpio0 {
-    status = "okay";
-};
-
-// gpiote periph. https://docs.nordicsemi.com/bundle/ps_nrf9151/page/gpiote.html
-&gpiote {
-    status = "okay";
-};
-```
-
-
 # Building and Running
 
 - Connect `P0.06` to `P0.03`
@@ -66,6 +31,11 @@ will print an information about this event along with its timestamp.
 
 
 You will see that the `sim_input` pin will simulate an input, which triggers a work function and you can measure when the ISR happens, when the work function happens, and when the main thread detects a flag.
+
+<img width="853" height="341" alt="image" src="https://github.com/user-attachments/assets/c3d4d0eb-b932-4a8f-a16d-ecb710b5b72d" />
+1: ISR is fired, devicetree pin driving finishes executing. The ISR Schedules a kernel work item.
+2: Kernel work item executes and devicetree pin driving finishes executing. it waits then toggles it back to "pulse". it also wakes up main, and tracks any 'missed' flags.
+3: main wakes up from a forever ksleep and eats the flag, driving the pin, going to sleep forever.
 
 ```
 -- 1 messages dropped ---
