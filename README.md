@@ -9,13 +9,8 @@ It shows using work items with ISRs and using the work item to wake up other tas
 `nRF9151DK`
 `NCS v3.0.2`
 
-The board hardware must have a push button connected via a GPIO pin. These are
-called "User buttons" on many of Zephyr's :ref:`boards`.
-
 The sample additionally supports an optional ``led0`` devicetree alias. This is
-the same alias used by the :zephyr:code-sample:`blinky` sample. If this is provided, the LED
-will be turned on when the button is pressed, and turned off off when it is
-released.
+the same alias used by the :zephyr:code-sample:`blinky` sample.
 
 # Building and Running
 
