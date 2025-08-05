@@ -14,6 +14,9 @@
 #include <zephyr/sys/util.h>
 
 #include <nrfx_gpiote.h>
+#include <hal/nrf_gpio.h>
+#include <hal/nrf_gpiote.h>
+#include <zephyr/irq.h>
 
 #define SLEEP_TIME_MS 1
 #define SIMULATED_INPUT_INTERVAL 1
@@ -21,6 +24,10 @@
 #define STACKSIZE 512
 
 #define NRFX_ISR_PIN 20
+// https://docs.nordicsemi.com/bundle/nrfx-apis-latest/page/group_configuration_of_c_m_s_i_s.html, gpiote1 for non secure
+#define ISR_IRQn 47
+#define ISR_PRIO 0
+#define IRQ_FLAGS IRQ_ZERO_LATENCY
 
 #define LOG_MODULE_NAME ngqt_main
 LOG_MODULE_REGISTER(LOG_MODULE_NAME);
@@ -63,13 +70,20 @@ void sense_work_fn(struct k_work *item)
 /* Interrupt callback: set output high when input is high */
 void sense_input_isr(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-    LOG_INF("sens_ISR");
+    //!IMPORTANT: Do not use kernel APIs with ZLI, undefined behavior in this context 
+    //LOG_INF("sens_ISR");
+    if (nrf_gpiote_event_check(NRF_GPIOTE1, NRF_GPIOTE_EVENT_PORT)) {
+        nrf_gpiote_event_clear(NRF_GPIOTE1, NRF_GPIOTE_EVENT_PORT);
+    }
     nrf_gpio_pin_set(NRFX_ISR_PIN);
     g_sens_cnt++;
+    
+
     /* Set the output pin high */
-    gpio_pin_set_dt(&task_output, 1);
+    // gpio_pin_set_dt(&task_output, 1);
     /* submit work item to offload irq */
-    k_work_submit(&sense_work_container.work);
+    // k_work_submit(&sense_work_container.work);
+
     nrf_gpio_pin_clear(NRFX_ISR_PIN);
 }
 
@@ -86,6 +100,8 @@ void simulate_input_thread(void)
     }
 }
 
+#define SENSE_INPUT_PIN 3
+
 int main(void)
 {
     int ret = 0;
@@ -100,12 +116,20 @@ int main(void)
     gpio_pin_configure_dt(&sim_input, GPIO_OUTPUT_INACTIVE);
 
     /* Configure input pin with interrupt on rising edge */
-    gpio_pin_configure_dt(&sense_input, GPIO_INPUT | GPIO_PULL_DOWN);
-    gpio_pin_interrupt_configure_dt(&sense_input, GPIO_INT_EDGE_RISING);
+    // gpio_pin_configure_dt(&sense_input, GPIO_INPUT | GPIO_PULL_DOWN);
+    // gpio_pin_interrupt_configure_dt(&sense_input, GPIO_INT_EDGE_RISING);
 
     /* Initialize and add callback */
-    gpio_init_callback(&sense_input_cb, sense_input_isr, BIT(sense_input.pin));
-    gpio_add_callback(sense_input.port, &sense_input_cb);
+    //gpio_init_callback(&sense_input_cb, sense_input_isr, BIT(sense_input.pin));
+    // gpio_add_callback(sense_input.port, &sense_input_cb);
+    
+    nrf_gpio_cfg_input(SENSE_INPUT_PIN, NRF_GPIO_PIN_PULLDOWN);
+    nrf_gpio_cfg_sense_set(SENSE_INPUT_PIN, NRF_GPIO_PIN_SENSE_HIGH);
+    nrf_gpiote_event_clear(NRF_GPIOTE1, NRF_GPIOTE_EVENT_PORT);
+    nrf_gpiote_int_enable(NRF_GPIOTE1, GPIOTE_INTENSET_PORT_Msk);
+    
+    IRQ_DIRECT_CONNECT(ISR_IRQn, ISR_PRIO, sense_input_isr, NULL, IRQ_FLAGS);
+    irq_enable(ISR_IRQn);
 
     /* set up LED */
     if (led.port && !gpio_is_ready_dt(&led))
