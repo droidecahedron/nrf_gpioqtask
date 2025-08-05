@@ -13,10 +13,14 @@
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/util.h>
 
+#include <nrfx_gpiote.h>
+
 #define SLEEP_TIME_MS 1
-#define SIMULATED_INPUT_INTERVAL 10
+#define SIMULATED_INPUT_INTERVAL 1
 #define SIM_IP_THREAD_PRIO 7
 #define STACKSIZE 512
+
+#define NRFX_ISR_PIN 20
 
 #define LOG_MODULE_NAME ngqt_main
 LOG_MODULE_REGISTER(LOG_MODULE_NAME);
@@ -60,11 +64,13 @@ void sense_work_fn(struct k_work *item)
 void sense_input_isr(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
     LOG_INF("sens_ISR");
+    nrf_gpio_pin_set(NRFX_ISR_PIN);
     g_sens_cnt++;
     /* Set the output pin high */
     gpio_pin_set_dt(&task_output, 1);
     /* submit work item to offload irq */
     k_work_submit(&sense_work_container.work);
+    nrf_gpio_pin_clear(NRFX_ISR_PIN);
 }
 
 void simulate_input_thread(void)
@@ -85,6 +91,9 @@ int main(void)
     int ret = 0;
 
     main_thread_id = k_current_get();
+
+    //NRF_Px_DIRSET = (1 << NRFX_ISR_PIN), followed with OUTSET/CLR.
+    nrf_gpio_cfg_output(NRFX_ISR_PIN);
 
     /* Configure output pin */
     gpio_pin_configure_dt(&task_output, GPIO_OUTPUT_INACTIVE);

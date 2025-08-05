@@ -22,6 +22,7 @@ released.
 - Connect `P0.06` to `P0.03`
 - Probe `P0.06` or `P0.03`, `P0.00`, and `P0.02`
 - Connect to `VCOM0` at the default `115.2,8,n,1` settings.
+- (optional) Probe `P0.20` to see a pin wiggle for the duration of the ISR.
 
 After startup, the program looks up a predefined GPIO device, and configures the
 pin in input mode, enabling interrupt generation on rising edge. During each
