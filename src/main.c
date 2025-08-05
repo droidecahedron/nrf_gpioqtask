@@ -16,8 +16,8 @@
 #include <nrfx_gpiote.h>
 
 #define SLEEP_TIME_MS 1
-#define SIMULATED_INPUT_INTERVAL 1
-#define SIM_IP_THREAD_PRIO 7
+#define SIMULATED_INPUT_INTERVAL 5
+#define SIM_IP_THREAD_PRIO 0
 #define STACKSIZE 512
 
 #define NRFX_ISR_PIN 20
@@ -63,26 +63,31 @@ void sense_work_fn(struct k_work *item)
 /* Interrupt callback: set output high when input is high */
 void sense_input_isr(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-    LOG_INF("sens_ISR");
+    //LOG_INF("sens_ISR");
     nrf_gpio_pin_set(NRFX_ISR_PIN);
     g_sens_cnt++;
-    /* Set the output pin high */
-    gpio_pin_set_dt(&task_output, 1);
-    /* submit work item to offload irq */
-    k_work_submit(&sense_work_container.work);
+    // /* Set the output pin high */
+    // gpio_pin_set_dt(&task_output, 1);
+    // /* submit work item to offload irq */
+    // k_work_submit(&sense_work_container.work);
     nrf_gpio_pin_clear(NRFX_ISR_PIN);
 }
 
+#define SIM_INPUT_PIN 6
 void simulate_input_thread(void)
 {
+    nrf_gpio_cfg_output(SIM_INPUT_PIN);
+    nrf_gpio_pin_clear(SIM_INPUT_PIN);
     for (;;)
     {
-        LOG_INF("sim_input");
-        // pulse for 100us every input sleep interval
-        gpio_pin_set_dt(&sim_input, 1);
-        k_sleep(K_USEC(100));
-        gpio_pin_set_dt(&sim_input, 0);
-        k_sleep(K_MSEC(SIMULATED_INPUT_INTERVAL));
+        nrf_gpio_pin_set(SIM_INPUT_PIN);
+        nrf_gpio_pin_clear(SIM_INPUT_PIN);
+        //LOG_INF("sim_input");
+
+        // gpio_pin_set_dt(&sim_input, 1);
+        // gpio_pin_set_dt(&sim_input, 0);
+        // k_sleep(K_MSEC(SIMULATED_INPUT_INTERVAL));
+        k_yield();
     }
 }
 
